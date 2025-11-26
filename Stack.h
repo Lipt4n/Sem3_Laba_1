@@ -8,7 +8,14 @@ class Stack {
     Array<T> a;
 public:
     void push(T x) { a.push_back(x); }
-    auto pop() { if (a.length()) a.remove(a.length()-1); } //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    auto pop() {
+        T res;
+        if (a.length()) {
+            res = a[a.length()-1];
+            a.remove(a.length()-1);
+        }
+        return res;
+    }
     void print() { a.print(); }
     bool empty() const { return a.length() == 0; }
     int size() const { return a.length(); }

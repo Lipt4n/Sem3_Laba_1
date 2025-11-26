@@ -55,8 +55,8 @@ public:
             if (p->data == x) { remove(p); return true; }
         return false;
     }
-    void pop_front() {
-        if (!head) return;
+    auto pop_front() {
+        if (!head) return T();
         Node<T>* temp = head;
         head = head->next;
         if (head) {
@@ -64,8 +64,10 @@ public:
         } else {
             tail = nullptr;
         }
+        T res = temp->data;
         delete temp;
         len--;
+        return res;
     }
     void pop_back() {
         if (!tail) return;

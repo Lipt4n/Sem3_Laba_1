@@ -8,7 +8,13 @@ class Queue {
     DoublyList<T> list;
 public:
     void push(T x) { list.push_back(x); }
-    void pop() { if (list.length()) list.pop_front(); } //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    auto pop() {
+        T res;
+        if (list.length()) {
+            res = list.pop_front();
+        }
+        return res;
+    }
     void print() { return list.print(); }
     bool empty() const { return list.length() == 0; }
     int size() const { return list.length(); }

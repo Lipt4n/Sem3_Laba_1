@@ -62,14 +62,15 @@ void test() {
     st.push(9); // 9
     st.push(8); // 9 8
     st.push(123); // 9 8 123
-    st.pop(); // 9 8
+    cout << st.pop() << endl; // 9 8
     st.print(); 
     cout << st.size() << " " << st.empty() << endl; // 2 0
 
     cout << "Queue" << endl;
     Queue<int> q;
     q.push(-1); q.push(0); q.push(1); q.push(2); // -1 0 1 2
-    q.pop(); q.pop(); // 1 2
+    cout << q.pop() << endl;
+    q.pop(); // 1 2
     q.print();
     cout << q.size() << " " << q.empty() << endl;
     
