@@ -3,335 +3,23 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
+#include "array.h"
+#include "SinglyList.h"
+#include "DoublyList.h"
+#include "Stack.h"
+#include "Queue.h"
+#include "BST.h"
 
 using namespace std;
 
-template<typename T>
-struct Node {
-    T data;
-    Node* next;
-    Node* prev;
-    Node(T val) : data(val), next(nullptr), prev(nullptr) {}
-};
+map<string, Array<int>> arrays;
+map<string, SinglyList<int>> singlyLists;
+map<string, DoublyList<int>> doublyLists;
+map<string, Stack<int>> stacks;
+map<string, Queue<int>> queues;
+map<string, BST<int>> trees;
 
-
-// 1. ДИНАМИЧЕСКИЙ МАССИВ
-
-template<typename T>
-class Array {
-    T* arr;
-    int size, cap;
-    void grow() {
-        cap = cap ? cap * 2 : 8;
-        T* newarr = new T[cap];
-        for (int i = 0; i < size; i++) newarr[i] = arr[i];
-        delete[] arr;
-        arr = newarr;
-    }
-public:
-    Array() : arr(nullptr), size(0), cap(0) {}
-    ~Array() { delete[] arr; }
-
-    void push_back(T x) {
-        if (size == cap) grow();
-        arr[size++] = x;
-    }
-    void pop_back() {
-        if (size > 0) {
-            size--;
-            arr[size] = T();   // вызываем конструктор по умолчанию
-        }
-    }
-    void insert(int idx, T x) {
-        if (idx < 0 || idx > size) throw "Некорректный индекс!";
-        if (size == cap) grow();
-        for (int i = size; i > idx; i--) arr[i] = arr[i-1];
-        arr[idx] = x;
-        size++;
-    }
-    void remove(int idx) {
-        if (idx < 0 || idx >= size) throw "Некорректный индекс!";
-        for (int i = idx; i < size-1; i++) arr[i] = arr[i+1];
-        size--;
-    }
-    void replace(int idx, T x) {
-        if (idx < 0 || idx >= size) throw "Некорректный индекс!";
-        arr[idx] = x;
-    }
-    T& operator[](int i) { return arr[i]; }
-    int length() const { return size; }
-    void print() const { for (int i = 0; i < size; i++) cout << arr[i] << ' '; cout << endl; }
-};
-
-
-// 2. ОДНОСВЯЗНЫЙ СПИСОК
-
-template<typename T>
-class SinglyList {
-    Node<T>* head = nullptr;
-    Node<T>* tail = nullptr;
-    int len = 0;
-
-    void del(Node<T>* n) { delete n; }
-public:
-    ~SinglyList() { while(head) pop_front(); }
-
-    void push_front(T x) {
-        Node<T>* n = new Node<T>(x);
-        n->next = head;
-        head = n;
-        if (!tail) tail = n;
-        len++;
-    }
-    void push_back(T x) {
-        Node<T>* n = new Node<T>(x);
-        if (tail) tail->next = n;
-        tail = n;
-        if (!head) head = tail;
-        len++;
-    }
-    void insert_after(Node<T>* pos, T x) {
-        if (!pos) return;
-        Node<T>* n = new Node<T>(x);
-        n->next = pos->next;
-        pos->next = n;
-        if (tail == pos) tail = n;
-        len++;
-    }
-    void insert_before(Node<T>* pos, T x) {
-        if (!pos) return;
-        if (pos == head) return push_front(x);
-        Node<T>* cur = head;
-        while (cur && cur->next != pos) cur = cur->next;
-        if (cur) insert_after(cur, x);
-    }
-
-    void pop_front() {
-        if (!head) return;
-        Node<T>* t = head;
-        head = head->next;
-        del(t);
-        if (!head) tail = nullptr;
-        len--;
-    }
-    void pop_back() {
-        if (!head) return;
-        if (head == tail) { pop_front(); return; }
-        Node<T>* cur = head;
-        while (cur->next != tail) cur = cur->next;
-        del(tail);
-        tail = cur;
-        tail->next = nullptr;
-        len--;
-    }
-
-    Node<T>* find(T x) {
-        Node<T>* cur = head;
-        while (cur && cur->data != x) cur = cur->next;
-        return cur;
-    }
-    bool remove_value(T x) {
-        if (!head) return false;
-        if (head->data == x) { pop_front(); return true; }
-        Node<T>* cur = head;
-        while (cur->next && cur->next->data != x) cur = cur->next;
-        if (cur->next) {
-            Node<T>* t = cur->next;
-            cur->next = t->next;
-            if (t == tail) tail = cur;
-            del(t);
-            len--;
-            return true;
-        }
-        return false;
-    }
-    void print() const {
-        for (Node<T>* p = head; p; p = p->next) cout << p->data << " -> ";
-        cout << "null" << endl;
-    }
-    int length() const { return len; }
-    Node<T>* get_head() const { return head; }
-};
-
-
-// 3. ДВУСВЯЗНЫЙ СПИСОК
-
-template<typename T>
-class DoublyList {
-    Node<T>* head = nullptr;
-    Node<T>* tail = nullptr;
-    int len = 0;
-public:
-    ~DoublyList() { while(head) { Node<T>* t = head; head = head->next; delete t; } }
-
-    void push_front(T x) {
-        Node<T>* n = new Node<T>(x);
-        n->next = head;
-        if (head) head->prev = n;
-        head = n;
-        if (!tail) tail = n;
-        len++;
-    }
-    void push_back(T x) {
-        Node<T>* n = new Node<T>(x);
-        n->prev = tail;
-        if (tail) tail->next = n;
-        tail = n;
-        if (!head) head = n;
-        len++;
-    }
-    void insert_after(Node<T>* p, T x) {
-        if (!p) return;
-        Node<T>* n = new Node<T>(x);
-        n->next = p->next; n->prev = p;
-        if (p->next) p->next->prev = n;
-        p->next = n;
-        if (p == tail) tail = n;
-        len++;
-    }
-    void insert_before(Node<T>* p, T x) {
-        if (!p) return;
-        if (p == head) return push_front(x);
-        insert_after(p->prev, x);
-    }
-    void remove(Node<T>* p) {
-        if (!p) return;
-        if (p->prev) p->prev->next = p->next;
-        if (p->next) p->next->prev = p->prev;
-        if (head == p) head = p->next;
-        if (tail == p) tail = p->prev;
-        delete p;
-        len--;
-    }
-    bool remove_value(T x) {
-        for (Node<T>* p = head; p; p = p->next)
-            if (p->data == x) { remove(p); return true; }
-        return false;
-    }
-    void pop_front() {
-        if (!head) return;
-        Node<T>* temp = head;
-        head = head->next;
-        if (head) {
-            head->prev = nullptr;
-        } else {
-            tail = nullptr;
-        }
-        delete temp;
-        len--;
-    }
-    void pop_back() {
-        if (!tail) return;
-        Node<T>* temp = tail;
-        tail = tail->prev;
-        if (tail) {
-            tail->next = nullptr;
-        } else {
-            head = nullptr;
-        }
-        delete temp;
-        len--;
-    }       
-    Node<T>* find(T x) {
-        for (Node<T>* p = head; p; p = p->next)
-            if (p->data == x) return p;
-        return nullptr;
-    }
-    void print() const {
-        for (Node<T>* p = head; p; p = p->next) cout << p->data << " <-> ";
-        cout << "null\n";
-    }
-    int length() const { return len; }
-};
-
-
-// 4. СТЕК (на массиве)
-
-template<typename T>
-class Stack {
-    Array<T> a;
-public:
-    void push(T x) { a.push_back(x); }
-    void pop() { if (a.length()) a.remove(a.length()-1); }
-    void print() { a.print(); }
-    bool empty() const { return a.length() == 0; }
-    int size() const { return a.length(); }
-};
-
-
-// 5. ОЧЕРЕДЬ (на двусвязном списке)
-
-template<typename T>
-class Queue {
-    DoublyList<T> list;
-public:
-    void push(T x) { list.push_back(x); }
-    void pop() { if (list.length()) list.pop_front(); }
-    void print() { return list.print(); }
-    bool empty() const { return list.length() == 0; }
-    int size() const { return list.length(); }
-};
-
-
-// 6. БИНАРНОЕ ДЕРЕВО ПОИСКА
-
-template<typename T>
-struct TreeNode {
-    T data;
-    TreeNode* left = nullptr;
-    TreeNode* right = nullptr;
-    TreeNode(T v) : data(v) {}
-};
-
-template<typename T>
-class BST {
-    TreeNode<T>* root = nullptr;
-
-    TreeNode<T>* insert(TreeNode<T>* node, T val) {
-        if (!node) return new TreeNode<T>(val);
-        if (val < node->data) node->left = insert(node->left, val);
-        else if (val > node->data) node->right = insert(node->right, val);
-        return node;
-    }
-    TreeNode<T>* min(TreeNode<T>* node) {
-        while (node->left) node = node->left;
-        return node;
-    }
-    TreeNode<T>* remove(TreeNode<T>* node, T val) {
-        if (!node) return nullptr;
-        if (val < node->data) node->left = remove(node->left, val);
-        else if (val > node->data) node->right = remove(node->right, val);
-        else {
-            if (!node->left) { TreeNode<T>* t = node->right; delete node; return t; }
-            if (!node->right) { TreeNode<T>* t = node->left; delete node; return t; }
-            TreeNode<T>* t = min(node->right);
-            node->data = t->data;
-            node->right = remove(node->right, t->data);
-        }
-        return node;
-    }
-    void inorder(TreeNode<T>* node) {
-        if (node) { inorder(node->left); cout << node->data << " "; inorder(node->right); }
-    }
-    void clear(TreeNode<T>* node) {
-        if (node) { clear(node->left); clear(node->right); delete node; }
-    }
-public:
-    void insert(T x) { root = insert(root, x); }
-    void remove(T x) { root = remove(root, x); }
-    bool find(T x) {
-        TreeNode<T>* cur = root;
-        while (cur) {
-            if (x == cur->data) return true;
-            cur = (x < cur->data) ? cur->left : cur->right;
-        }
-        return false;
-    }
-    void print() { inorder(root); cout << endl; }
-    ~BST() { clear(root); }
-};
-
-//Тест
 
 void test() {
     cout << "Dynamic array" << endl;
@@ -392,8 +80,398 @@ void test() {
     tree.print();
 }
 
+vector<string> split(const string& s) {
+    vector<string> tokens;
+    string token;
+    istringstream tokenStream(s);
+    while (getline(tokenStream, token, ' ')) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+string to_upper(const string& s) {
+    string result = s;
+    transform(result.begin(), result.end(), result.begin(), ::toupper);
+    return result;
+}
+
+
+void process_command(const string& command) {
+    vector<string> tokens = split(command);
+    if (tokens.empty()) return;
+
+    string cmd = to_upper(tokens[0]);
+    
+    // === МАССИВ (A) ===
+    if (cmd == "APUB" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        arrays[name].push_back(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "APOB" && tokens.size() >= 2) {
+        string name = tokens[1];
+        arrays[name].pop_back();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "AIN" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int idx = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        arrays[name].insert(idx, value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "AREM" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int idx = stoi(tokens[2]);
+        arrays[name].remove(idx);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "AREP" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int idx = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        arrays[name].replace(idx, value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "AGET" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int idx = stoi(tokens[2]);
+        cout << arrays[name][idx] << endl;
+    }
+    else if (cmd == "ALEN" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << arrays[name].length() << endl;
+    }
+    else if (cmd == "APRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        arrays[name].print();
+    }
+    // === ОДНОСВЯЗНЫЙ СПИСОК (S) ===
+    else if (cmd == "SPUF" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        singlyLists[name].push_front(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "SPUB" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        singlyLists[name].push_back(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "SINA" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        Node<int>* node = singlyLists[name].find(target);
+        if (node) {
+            singlyLists[name].insert_after(node, value);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }
+    }
+    else if (cmd == "SINB" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        Node<int>* node = singlyLists[name].find(target);
+        if (node) {
+            singlyLists[name].insert_before(node, value);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }
+    }
+    else if (cmd == "SPOF" && tokens.size() >= 2) {
+        string name = tokens[1];
+        singlyLists[name].pop_front();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "SPOB" && tokens.size() >= 2) {
+        string name = tokens[1];
+        singlyLists[name].pop_back();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "SREB" && tokens.size() >= 2) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        Node<int>* node = singlyLists[name].find(target);
+        if (node) {
+            singlyLists[name].remove_before(node);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }        
+    }
+    else if (cmd == "SREA" && tokens.size() >= 2) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        Node<int>* node = singlyLists[name].find(target);
+        if (node) {
+            singlyLists[name].remove_after(node);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        } 
+    }
+    else if (cmd == "SREM" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        bool result = singlyLists[name].remove_value(value);
+        cout << (result ? "OK" : "NOT_FOUND") << endl;
+    }
+    else if (cmd == "SLEN" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << singlyLists[name].length() << endl;
+    }
+    else if (cmd == "SPRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        singlyLists[name].print();
+    }
+    // === ДВУСВЯЗНЫЙ СПИСОК (D) ===
+    else if (cmd == "DPUF" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        doublyLists[name].push_front(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "DPUB" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        doublyLists[name].push_back(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "DINA" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        Node<int>* node = doublyLists[name].find(target);
+        if (node) {
+            doublyLists[name].insert_after(node, value);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }
+    }
+    else if (cmd == "DINB" && tokens.size() >= 4) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        int value = stoi(tokens[3]);
+        Node<int>* node = doublyLists[name].find(target);
+        if (node) {
+            doublyLists[name].insert_before(node, value);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }
+    }
+    else if (cmd == "DPOF" && tokens.size() >= 2) {
+        string name = tokens[1];
+        doublyLists[name].pop_front();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "DPOB" && tokens.size() >= 2) {
+        string name = tokens[1];
+        doublyLists[name].pop_back();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "DREB" && tokens.size() >= 2) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        Node<int>* node = doublyLists[name].find(target);
+        if (node) {
+            doublyLists[name].remove_before(node);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        }        
+    }
+    else if (cmd == "DREA" && tokens.size() >= 2) {
+        string name = tokens[1];
+        int target = stoi(tokens[2]);
+        Node<int>* node = doublyLists[name].find(target);
+        if (node) {
+            doublyLists[name].remove_after(node);
+            cout << "OK" << endl;
+        } else {
+            cout << "TARGET_NOT_FOUND" << endl;
+        } 
+    }
+    else if (cmd == "DREM" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        bool result = doublyLists[name].remove_value(value);
+        cout << (result ? "OK" : "NOT_FOUND") << endl;
+    }
+    else if (cmd == "DLEN" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << doublyLists[name].length() << endl;
+    }
+    else if (cmd == "DPRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        doublyLists[name].print();
+    }
+    // === СТЕК (ST) ===
+    else if (cmd == "STPU" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        stacks[name].push(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "STPO" && tokens.size() >= 2) {
+        string name = tokens[1];
+        stacks[name].pop();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "STEM" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << (stacks[name].empty() ? "TRUE" : "FALSE") << endl;
+    }
+    else if (cmd == "STSI" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << stacks[name].size() << endl;
+    }
+    else if (cmd == "STPRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        stacks[name].print();
+    }
+    // === ОЧЕРЕДЬ (Q) ===
+    else if (cmd == "QPU" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        queues[name].push(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "QPO" && tokens.size() >= 2) {
+        string name = tokens[1];
+        queues[name].pop();
+        cout << "OK" << endl;
+    }
+    else if (cmd == "QEM" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << (queues[name].empty() ? "TRUE" : "FALSE") << endl;
+    }
+    else if (cmd == "QSI" && tokens.size() >= 2) {
+        string name = tokens[1];
+        cout << queues[name].size() << endl;
+    }
+    else if (cmd == "QPRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        queues[name].print();
+    }  
+    // === ДЕРЕВО (T) ===
+    else if (cmd == "TINS" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        trees[name].insert(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "TREM" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        trees[name].remove(value);
+        cout << "OK" << endl;
+    }
+    else if (cmd == "TFIN" && tokens.size() >= 3) {
+        string name = tokens[1];
+        int value = stoi(tokens[2]);
+        bool found = trees[name].find(value);
+        cout << (found ? "TRUE" : "FALSE") << endl;
+    }
+    else if (cmd == "TPRINT" && tokens.size() >= 2) {
+        string name = tokens[1];
+        trees[name].print();
+    }
+    // === СИСТЕМНЫЕ ===
+    else if (cmd == "TEST") {
+        test();
+    }
+    else if (cmd == "EXIT" || cmd == "QUIT") {
+        exit(0);
+    }
+    else if (cmd == "HELP") {
+        cout << "Доступные команды:" << endl;
+        cout << "=== МАССИВ (A) ===" << endl;
+        cout << "APUB <name> <value> - Push Back" << endl;
+        cout << "APOB <name> - Pop Back" << endl;
+        cout << "AIN <name> <index> <value> - Insert" << endl;
+        cout << "AREM <name> <index> - Remove" << endl;
+        cout << "AREP <name> <index> <value> - Replace" << endl;
+        cout << "AGET <name> <index> - Get elem at index" << endl;
+        cout << "ALEN <name> - Get length" << endl;
+        cout << "APRINT <name> - Print" << endl;
+
+        cout << "=== ОДНОСВЯЗНЫЙ СПИСОК (S) ===" << endl;
+        cout << "SPUF <name> <value> - Push Front" << endl;
+        cout << "SPUB <name> <value> - Push Back" << endl;
+        cout << "SINA <name> <target_value> <new_value> - Insert After" << endl;
+        cout << "SINB <name> <target_value> <new_value> - Insert Before" << endl;
+        cout << "SPOF <name> - Pop Front" << endl;
+        cout << "SPOB <name> - Pop Back" << endl;
+        cout << "SREB <name> <target_value> - Remove before" << endl;
+        cout << "SREA <name> <target_value> - Remove after" << endl;
+        cout << "SREM <name> <value> - Remove by value" << endl;
+        cout << "SLEN <name> - Get length" << endl;
+        cout << "SPRINT <name> - Print" << endl;
+
+        cout << "=== ДВУСВЯЗНЫЙ СПИСОК (D) ===" << endl;
+        cout << "DPUF <name> <value> - Push Front" << endl;
+        cout << "DPUB <name> <value> - Push Back" << endl;
+        cout << "DINA <name> <target_value> <new_value> - Insert After" << endl;
+        cout << "DINB <name> <target_value> <new_value> - Insert Before" << endl;
+        cout << "DPOF <name> - Pop Front" << endl;
+        cout << "DPOB <name> - Pop Back" << endl;
+        cout << "DREB <name> <target_value> - Remove before" << endl;
+        cout << "DREA <name> <target_value> - Remove after" << endl;
+        cout << "DREM <name> <value> - Remove by value" << endl;
+        cout << "DLEN <name> - Get length" << endl;
+        cout << "DPRINT <name> - Print" << endl;
+        //rem bef rem after
+
+        cout << "=== СТЕК (ST) ===" << endl;
+        cout << "STPU <name> <value> - Push" << endl;
+        cout << "STPO <name> - Pop" << endl;
+        cout << "STEM <name> - Check if empty" << endl;
+        cout << "STSI <name> - Get size" << endl;
+        cout << "STPRINT <name> - Print" << endl;
+
+        cout << "=== ОЧЕРЕДЬ (Q) ===" << endl;
+        cout << "QPU <name> <value> - Push" << endl;
+        cout << "QPO <name> - Pop" << endl;
+        cout << "QEM <name> - Check if empty" << endl;
+        cout << "QSI <name> - Get size" << endl;
+        cout << "QPRINT <name> - Print" << endl;
+        
+
+        cout << "=== ДЕРЕВО (T) ===" << endl;
+        cout << "TINS <name> <value> - Insert" << endl;
+        cout << "TREM <name> <value> - Remove" << endl;
+        cout << "TPRINT <name> - Print (inorder)" << endl;
+
+        cout << "=== СИСТЕМНЫЕ ===" << endl;
+        cout << "TEST - Run tests" << endl;
+        cout << "HELP - Show this help" << endl;
+        cout << "EXIT - Exit program" << endl;
+    }
+    else {
+        cout << "Неизвестная команда. Введите HELP для справки." << endl;
+    }
+}
+
 int main() {
-    test();
+    cout << "Система управления структурами данных" << endl;
+    cout << "Введите HELP для списка команд" << endl;
+    
+    string line;
+    while (true) {
+        cout << "   > ";
+        getline(cin, line);
+        if (line.empty()) continue;
+        process_command(line);
+    }
     return 0;
 }
 
